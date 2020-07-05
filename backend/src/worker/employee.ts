@@ -8,8 +8,8 @@ import { addDays, addMonths, format, endOfMonth, differenceInCalendarDays } from
  * Employee worker steps:
  * 1. Pre processing - ok
  * 2. Generate leave - ok
- * 3. Generate absence
- * 4. Update latest salary
+ * 3. Generate absence - ok
+ * 4. Update latest salary - ok
  */
 
 /**
@@ -31,6 +31,7 @@ export async function process(start: Date, end: Date) {
     genOneMonthAbsence(addMonths(start, 1)),
     genOneMonthAbsence(addMonths(start, 2))
   ]);
+  await updateSalary(start, end);
 }
 
 /**
@@ -130,7 +131,7 @@ function between(min: number, max: number) {
 export async function genOneMonthLeave(start: Date) {
   const startf = format(start, 'yyyy-MM-dd');
   const promiseDb = db.promise();
-  const limit = Math.round((300024 * 10) / 100);
+  const limit = Math.round((300024 * 5) / 100);
   const empsql = `
     SELECT emp_no, gender FROM employees
     WHERE hire_date <= '${startf}'
@@ -194,19 +195,18 @@ async function genOneMonthAbsence(start: Date) {
       values = genAbsenceByRange(empNo, start, end);
     }
     db.query(sql, [values], (error, result) => {
+      if (error) {
+        console.log('error', error);
+      }
       callback();
     });
   }, 100);
 
-  q.drain(() => {
-    console.log(new Date(), 'finish q');
-  });
-
   q.error((err, task) => {
-    console.error('task experienced an error', err);
+    console.error('task experienced an error', task, err);
   });
 
-  const empsql = `SELECT emp_no FROM employees LIMIT 10000;`;
+  const empsql = `SELECT emp_no FROM employees LIMIT 50000;`;
   db.query(empsql)
     .stream({ highWaterMark: 1024 * 16 })
     .pipe(
@@ -224,6 +224,8 @@ async function genOneMonthAbsence(start: Date) {
     .on('error', (err) => {
       console.log('err', err);
     });
+
+  await q.drain();
 }
 
 function genAbsence(empNo: number, date: Date) {
@@ -249,4 +251,148 @@ function genAbsenceByRange(empNo: number, from: Date, to: Date) {
     results.push(genAbsence(empNo, addDays(from, i)));
   }
   return results;
+}
+
+export async function updateSalary(start: Date, end: Date) {
+  const startf = format(start, 'yyyy-MM-dd');
+  const endf = format(end, 'yyyy-MM-dd');
+
+  const q = async.queue((row: any, callback) => {
+    const newSalary = calcNewSalary(row);
+    const updatesql = `UPDATE salaries SET salary = ? WHERE emp_no = ? AND to_date = '9999-01-01'`;
+
+    db.query(updatesql, [newSalary, row.emp_no], (error, result) => {
+      if (error) {
+        console.log('error', error);
+      }
+      callback();
+    });
+  }, 100);
+
+  q.error((err, task) => {
+    console.error('task experienced an error', task, err);
+  });
+
+  const sql = `
+    SELECT a.emp_no, s.salary, t.title, a.days, a.avg_working_hours, a.avg_break_time, l.unpaid_days
+    FROM (
+      SELECT
+      emp_no,
+      COUNT(emp_no) as days,
+      AVG(time_format(timediff(end_date, start_date),'%H')) as avg_working_hours,
+      AVG(break_time) as avg_break_time
+      FROM emp_absences
+      WHERE start_date >= '${startf}'
+      AND end_date <= '${endf}'
+      GROUP BY emp_no
+    ) a
+    LEFT JOIN (
+      SELECT emp_no, SUM(time_format(timediff(end_date, start_date),'%H')) / 24 as unpaid_days
+      FROM employees.emp_leaves
+      WHERE start_date >= '${startf}' AND end_date <= '${endf}' AND leave_type = 'U'
+      GROUP BY emp_no
+    ) l
+    ON a.emp_no = l.emp_no
+    LEFT JOIN salaries s
+    ON a.emp_no = s.emp_no
+    LEFT JOIN titles t
+    ON a.emp_no = t.emp_no
+    WHERE s.to_date = '9999-01-01'
+    AND t.to_date = '9999-01-01';
+  `;
+  db.query(sql)
+    .stream({ highWaterMark: 1024 })
+    .pipe(
+      new stream.Transform({
+        objectMode: true,
+        transform: (row, encoding, callback) => {
+          q.push(row);
+          callback();
+        }
+      })
+    )
+    .on('finish', () => {
+      console.log(new Date(), 'finish get raw data');
+    })
+    .on('error', (err) => {
+      console.log('err', err);
+    });
+
+  await q.drain();
+}
+
+function calcNewSalary(row: any) {
+  let percent = 0;
+  // working hour
+  if (row.unpaid_days == null) {
+    percent = percent + calcWorkingHour(row.avg_working_hours);
+  } else {
+    const newAvg = calcAvgWorkingHour(row.days, row.avg_working_hours, row.unpaid_days);
+    percent = percent + calcWorkingHour(newAvg);
+  }
+
+  // break time
+  percent = percent + calcBreakTime(row.avg_break_time);
+
+  // title
+  let increament = 0;
+  const byTitle = calcJobTitle(row.title);
+  if (byTitle === 1000) {
+    increament = increament + byTitle;
+  } else {
+    percent = percent + byTitle;
+  }
+
+  return calcFinalSalary(row.salary, percent, increament);
+}
+
+function calcWorkingHour(avg: number) {
+  if (avg >= 12) {
+    return 5;
+  } else if (avg <= 8 && avg > 7) {
+    return 2.5;
+  } else if (avg <= 7 && avg >= 5) {
+    return 0.5;
+  }
+  return 0;
+}
+
+function calcAvgWorkingHour(days: number, avg: number, unpaid: number): number {
+  const sum = avg * days;
+  const divider = days + unpaid;
+  return sum / divider;
+}
+
+function calcBreakTime(avg: number): number {
+  if (avg > 60) {
+    return -1;
+  }
+  return 0;
+}
+
+function calcJobTitle(title: string): number {
+  switch (title) {
+    case 'Staff':
+      return 1;
+    case 'Senior Engineer':
+      return 3;
+    case 'Engineer':
+      return 2;
+    case 'Assistant Engineer':
+      return 2.5;
+    case 'Technique Leader':
+      return 4;
+    default:
+      return 1000;
+  }
+}
+
+function calcFinalSalary(prev: number, percent: number, increament: number) {
+  let adjustment = increament + prev * (percent / 100);
+  if (adjustment > 5000) {
+    adjustment = 50000;
+  } else if (adjustment < 0) {
+    adjustment = 0;
+  }
+  return prev + adjustment;
 }

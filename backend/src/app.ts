@@ -12,7 +12,8 @@ import { errorHandler, notFoundHandler } from './common/error-handler';
 import { requestTracer } from './middleware/request-tracer';
 import { employeeQueue } from './config/bull';
 import db from './config/db';
-import { testRun } from './worker/woker.controller';
+
+import { process } from './worker/employee';
 
 // Create Express server
 const app = express();
@@ -42,18 +43,16 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 });
 
 app.use('/api', apiRouter);
-app.post('/test', testRun);
 
 // error area
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 // worker area
-employeeQueue.process((job, done) => {
-  console.log('job', job.id);
-  setTimeout(() => {
-    done();
-  }, 10000);
+employeeQueue.process(async (job) => {
+  const startDate = new Date(job.data.start);
+  const endDate = new Date(job.data.end);
+  await process(startDate, endDate);
 });
 
 export default app;
