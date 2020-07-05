@@ -6,7 +6,7 @@ const db = mysql.createPool({
   user: 'root',
   password: 'my-secret-pw',
   database: 'employees',
-  connectionLimit: 10,
+  connectionLimit: 50,
   Promise: bluebird
 });
 

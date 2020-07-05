@@ -19,10 +19,11 @@ TODO:
 - Use env
 - Automation when create mysql image import database dump from mock
 - including create table script for
+DROP TABLE IF EXISTS emp_absences;
 CREATE TABLE emp_absences (
     emp_no       INT              NOT NULL,  
-    start_date   DATE             NOT NULL,
-    end_date     DATE             NOT NULL,
+    start_date   DATETIME         NOT NULL,
+    end_date     DATETIME         NOT NULL,
     break_time   INT              NOT NULL,
     FOREIGN KEY (emp_no)  REFERENCES employees   (emp_no)  ON DELETE CASCADE,
     PRIMARY KEY (emp_no,start_date)
