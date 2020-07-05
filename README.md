@@ -56,7 +56,7 @@ npm install
 npm run watch
 
 # build
-npm build
+npm run build
 npm start
 ```
 
@@ -75,3 +75,19 @@ npm run build
 ## Usage
 
 API usage inside `Kredivo Test.postman_collection.json`
+
+
+## Testing
+
+Configuration:
+- leave % for each month is 5% of employee
+- absences currently is set to 50000 employees
+
+The heavy part is inserting absences, we can adjust the limit inside `backend/src/worker/employee.ts:209`
+
+
+Result:
+```
+Processed On: 6/6/2020, 10:01:35 AM
+Finished On: 6/6/2020, 10:14:23 AM
+```
