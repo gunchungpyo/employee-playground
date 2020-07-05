@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "a0a1ab91-ed2f-42e8-80b6-ddf1c561243b",
-		"name": "Kredivo Test",
+		"name": "API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [

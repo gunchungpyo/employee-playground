@@ -74,7 +74,7 @@ npm run build
 
 ## Usage
 
-API usage inside `Kredivo Test.postman_collection.json`
+API usage inside `API.postman_collection.json`
 
 
 ## Testing
