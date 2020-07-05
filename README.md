@@ -1,24 +1,26 @@
 # Employee Tools
 
 This repo contains:
-* Nodejs Queue
-* UI
+* backend: API and Worker
+* web: UI using Vue.js
+* [mock sql data](https://github.com/datacharmer/test_db)
 
 ## Setup
 
 ### Database using MySQL v5.7
 
 ```bash
+docker run -p 3306:3306 --name my-mysql -v <your_test_db_folder>:/var/mock/test_db -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:5
+
+# example
 docker run -p 3306:3306 --name my-mysql -v ~/workspace/test_db:/var/mock/test_db -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:5
 
 docker exec -it my-mysql bash -l
 cd /var/mock/test_db
 mysql -u root -p < employees.sql
 ```
-TODO:
-- Use env
-- Automation when create mysql image import database dump from mock
-- including create table script for
+
+```sql
 DROP TABLE IF EXISTS emp_absences;
 CREATE TABLE emp_absences (
     emp_no       INT              NOT NULL,  
@@ -38,8 +40,38 @@ CREATE TABLE emp_leaves (
     FOREIGN KEY (emp_no)  REFERENCES employees   (emp_no)  ON DELETE CASCADE,
     PRIMARY KEY (emp_no,start_date)
 );
+```
 
 ### Redis using v5
 docker run -p 6379:6379 --name my-redis -d redis:5-alpine
 
+### Backend
+
+Copy `.env.example` as `.env`
+
+```bash
+npm install
+
+# development
+npm run watch
+
+# build
+npm build
+npm start
+```
+
+### Frontend
+
+```bash
+npm install
+
+# development
+npm run serve
+
+# build
+npm run build
+```
+
 ## Usage
+
+API usage inside `Kredivo Test.postman_collection.json`

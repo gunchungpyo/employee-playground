@@ -1,0 +1,102 @@
+{
+	"info": {
+		"_postman_id": "a0a1ab91-ed2f-42e8-80b6-ddf1c561243b",
+		"name": "Kredivo Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Avg Salary",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/employee/salary?per=1986-12-31",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"employee",
+						"salary"
+					],
+					"query": [
+						{
+							"key": "per",
+							"value": "1986-12-31"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a Job",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "start",
+							"value": "2010-01-01",
+							"type": "text"
+						},
+						{
+							"key": "end",
+							"value": "2010-03-31",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/v1/queue",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"queue"
+					],
+					"query": [
+						{
+							"key": "per",
+							"value": "1986-12-31",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Jobs",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/queue",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"queue"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
