@@ -32,7 +32,7 @@
     "cuid": "^2.1.8",
     "date-fns": "^2.14.0",
     "dotenv": "^8.2.0",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "helmet": "^3.22.0",
     "http-errors": "^1.7.3",
     "ioredis": "^4.17.3",
